@@ -10,12 +10,13 @@ const int screen_height = 800;
  * draw current gradient descent state and the final (perfect) regression
  */
 struct Regression {
-    virtual void draw_current(Color color) = 0; // draw current descent regression
-    virtual void draw_final(Color color) = 0;   // draw final regression
-    virtual void add_point(Vector2 point) = 0;  // update the calculated (final) regression
+    virtual void draw_description(int x, int y, int font_size, Color color) = 0; // draw the title and the function
+    virtual void draw_current(Color color) = 0;                // draw current descent regression
+    virtual void draw_final(Color color) = 0;                  // draw final regression
+    virtual void add_point(Vector2 point) = 0;                 // update the calculated (final) regression
     virtual void descent_step(std::vector<Vector2> &data) = 0; // do one gradient descent iteration
     virtual float evaluate_at(float x) = 0;
-
+    virtual float current_error(std::vector<Vector2> &data) = 0;
 };
 
 void draw_dash_dotted_line(float start_x, float start_y, float end_x, float end_y, float dash_len, Color color) {
@@ -86,8 +87,21 @@ struct LinearRegression : Regression {
         descent_b -= b_gradient * b_weight;
     }
 
+    void draw_description(int x, int y, int font_size, Color color) override {
+        DrawText("Linear regression", x, y, font_size, color);
+        DrawText(TextFormat("y = %.2fx + %.2f", descent_a, descent_b), x, font_size + y, font_size, color);
+    }
+
     float evaluate_at(float x) override {
         return descent_a * x + descent_b;
+    }
+
+    virtual float current_error(std::vector<Vector2> &data) override {
+        float e = 0.0f;
+        for (auto [x, y] : data) {
+            e += std::pow(descent_a * x + descent_b - y, 2);
+        }
+        return data.size() > 0 ? e / data.size(): e;
     }
 
     //draws y = ax + b through the entire screen
@@ -130,6 +144,8 @@ int main() {
             lr.draw_final(GRAY);
             lr.descent_step(data);
             lr.draw_current(BLACK);
+            lr.draw_description(30, 30, 30, GRAY);
+            DrawText(TextFormat("Error: %d", lr.current_error(data)), 30, 90, 30, GRAY);
 
             for (auto [x, y] : data) {
                 DrawCircle(x, screen_height - y, 3.0f, RED);
