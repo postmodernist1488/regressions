@@ -140,6 +140,55 @@ struct LinearRegression : Regression {
               sx2 = 0.0f;
         std::size_t n = 0;
 };
+
+float sqrt_signed(float x) {
+    return x > 0 ? std::sqrt(x) : -std::sqrt(-x);
+}
+
+struct QuadraticRegression : Regression {
+    void draw_description(int x, int y, int font_size, Color color) override {
+        DrawText("Linear regression", x, y, font_size, color);
+        DrawText(TextFormat("y = %.2fx^2 + %.2fx + %.2f", descent.a, descent.b, descent.c), x, font_size + y, font_size, color);
+    }
+    void add_point(Vector2 point) override {
+    }
+
+    virtual void descent_step(std::vector<Vector2> &data) {
+        const float a_weight = 0.00000001f;
+        const float b_weight = 0.000001f;
+        const float c_weight = 0.000001f;
+        
+        float a_gradient = 0.0f;
+        for (auto [x, y]: data) {
+            a_gradient += 2 * (descent.a * std::pow(x, 2) + descent.b * x + descent.c - y) * std::pow(x, 2);
+        }
+        float b_gradient = 0.0f;
+        for (auto [x, y]: data) {
+            b_gradient += 2 * (descent.a * std::pow(x, 2) + descent.b * x + descent.c - y) * x;
+        }
+        float c_gradient = 0.0f;
+        for (auto [x, y]: data) {
+            c_gradient += 2 * (descent.a * std::pow(x, 2) + descent.b * x + descent.c - y);
+        }
+        if (data.size() > 0) {
+            a_gradient /= std::pow(data.size(), 2);
+            b_gradient /= data.size();
+            c_gradient /= data.size();
+        }
+        descent.a -= sqrt_signed(a_gradient) * a_weight;
+        descent.b -= sqrt_signed(b_gradient) * b_weight;
+        descent.c -= sqrt_signed(c_gradient) * c_weight;
+    }
+
+    void reset() override { 
+        descent.a = -0.1f;
+        descent.b = 0.0f;
+        descent.c = 500.0f;
+    }
+
+    QuadraticFunction descent, calculated;
+};
+
 enum REGRESSION_TYPE { LINEAR, QUADRATIC };
 
 int main() {
@@ -149,9 +198,8 @@ int main() {
     std::vector<Vector2> data;
     REGRESSION_TYPE current_regression = QUADRATIC;
     LinearRegression lr;
-
-    QuadraticFunction a;
-    a.a = 0.001f;
+    QuadraticRegression qr;
+    qr.reset();
 
     while (!WindowShouldClose()) {
 
@@ -162,11 +210,20 @@ int main() {
             };
             data.push_back(point);
             lr.add_point(point);
+            qr.add_point(point);
         }
 
         if (IsKeyPressed(KEY_R)) {
             data.clear();
             lr.reset();
+            qr.reset();
+        }
+
+        if (IsKeyPressed(KEY_F)) {
+            SetTargetFPS(0);
+        }
+        if (IsKeyReleased(KEY_F)) {
+            SetTargetFPS(60);
         }
 
         if (IsKeyPressed(KEY_ONE)) current_regression = LINEAR;
@@ -175,11 +232,14 @@ int main() {
         BeginDrawing();
             ClearBackground(RAYWHITE);
 
+
             switch(current_regression) {
                 case LINEAR: 
                     {
                         lr.calculated.plot(GRAY);
+
                         lr.descent_step(data);
+
                         lr.descent.plot(BLACK);
                         lr.draw_description(30, 30, 30, GRAY);
                         float error = lr.descent.current_error(data);
@@ -192,7 +252,13 @@ int main() {
                     break;
                 case QUADRATIC: 
                     {   
-                        a.plot(BLACK);
+                        qr.descent_step(data);
+                        qr.descent.plot(BLACK);
+                        for (auto [x, y] : data) {
+                            DrawCircle(x, screen_height - y, 3.0f, RED);
+                            //draw_dash_dotted_line(x, screen_height - y, x, screen_height - lr.descent.evaluate_at(x), 4, BLUE);
+                        }
+
                     }
                     break;
             }
