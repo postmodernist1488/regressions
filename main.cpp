@@ -9,14 +9,35 @@ const int screen_height = 800;
 /* abstract interface for a regression that is able to 
  * draw current gradient descent state and the final (perfect) regression
  */
+
 struct Regression {
     virtual void draw_description(int x, int y, int font_size, Color color) = 0; // draw the title and the function
-    virtual void draw_current(Color color) = 0;                // draw current descent regression
-    virtual void draw_final(Color color) = 0;                  // draw final regression
     virtual void add_point(Vector2 point) = 0;                 // update the calculated (final) regression
     virtual void descent_step(std::vector<Vector2> &data) = 0; // do one gradient descent iteration
+};
+
+struct Function {
     virtual float evaluate_at(float x) = 0;
-    virtual float current_error(std::vector<Vector2> &data) = 0;
+    void plot(Color color) {
+        for (int x = 0; x < screen_width; ++x) {
+            DrawPixel(x, evaluate_at(x), color);
+        }
+    }
+    float current_error(std::vector<Vector2> &data) {
+        float e = 0.0f;
+        for (auto [x, y] : data) {
+            e += std::pow(evaluate_at(x) - y, 2);
+        }
+        return data.size() > 0 ? e / data.size(): e;
+    }
+};
+
+struct LinearFunction : Function {
+    float evaluate_at(float x) {
+        return a * x + b;
+    }
+
+    float a = 0.0f, b = 0.0f;
 };
 
 void draw_dash_dotted_line(float start_x, float start_y, float end_x, float end_y, float dash_len, Color color) {
@@ -46,12 +67,11 @@ void draw_dash_dotted_line(float start_x, float start_y, float end_x, float end_
 
 struct LinearRegression : Regression {
     
-    void draw_current(Color color) override {
-        draw_line(descent_a, descent_b, color);
+    void draw_current(Color color) {
+        draw_line(descent.a, descent.b, color);
     }
-
-    void draw_final(Color color) override {
-        draw_line(calculated_a, calculated_b, color);
+    void draw_final(Color color) {
+        draw_line(calculated.a, calculated.b, color);
     }
 
     void add_point(Vector2 point) override {
@@ -61,8 +81,8 @@ struct LinearRegression : Regression {
         sx2 += std::pow(point.x, 2);
         n += 1;
 
-        calculated_a = (sxy * n - sx * sy) / (sx2 * n - std::pow(sx, 2));
-        calculated_b = (sy - calculated_a * sx) / n;
+        calculated.a = (sxy * n - sx * sy) / (sx2 * n - std::pow(sx, 2));
+        calculated.b = (sy - calculated.a * sx) / n;
 
     }
 
@@ -72,36 +92,24 @@ struct LinearRegression : Regression {
         
         float a_gradient = 0.0f;
         for (auto [x, y]: data) {
-            a_gradient += 2 * (descent_a * x + descent_b - y) * x;
+            a_gradient += 2 * (descent.a * x + descent.b - y) * x;
         }
         float b_gradient = 0.0f;
         for (auto [x, y]: data) {
-            b_gradient += 2 * (descent_a * x + descent_b - y);
+            b_gradient += 2 * (descent.a * x + descent.b - y);
         }
 
         if (data.size() > 0) {
             a_gradient /= data.size();
             b_gradient /= data.size();
         }
-        descent_a -= a_gradient * a_weight;
-        descent_b -= b_gradient * b_weight;
+        descent.a -= a_gradient * a_weight;
+        descent.b -= b_gradient * b_weight;
     }
 
     void draw_description(int x, int y, int font_size, Color color) override {
         DrawText("Linear regression", x, y, font_size, color);
-        DrawText(TextFormat("y = %.2fx + %.2f", descent_a, descent_b), x, font_size + y, font_size, color);
-    }
-
-    float evaluate_at(float x) override {
-        return descent_a * x + descent_b;
-    }
-
-    virtual float current_error(std::vector<Vector2> &data) override {
-        float e = 0.0f;
-        for (auto [x, y] : data) {
-            e += std::pow(descent_a * x + descent_b - y, 2);
-        }
-        return data.size() > 0 ? e / data.size(): e;
+        DrawText(TextFormat("y = %.2fx + %.2f", descent.a, descent.b), x, font_size + y, font_size, color);
     }
 
     //draws y = ax + b through the entire screen
@@ -109,13 +117,13 @@ struct LinearRegression : Regression {
         DrawLine(0, screen_height - (a * 0 + b), screen_width, screen_height - (a * screen_width + b), color);
     }
 
+    LinearFunction descent, calculated;
+
     private:
         float sx = 0.0f,
               sy = 0.0f,
               sxy = 0.0f,
               sx2 = 0.0f;
-        float descent_a = 0.0f, descent_b = 0.0f;
-        float calculated_a = 0.0f, calculated_b = 0.0f;
         std::size_t n = 0;
 };
 
@@ -145,11 +153,11 @@ int main() {
             lr.descent_step(data);
             lr.draw_current(BLACK);
             lr.draw_description(30, 30, 30, GRAY);
-            DrawText(TextFormat("Error: %d", lr.current_error(data)), 30, 90, 30, GRAY);
+            DrawText(TextFormat("Error: %d", lr.descent.current_error(data)), 30, 90, 30, GRAY);
 
             for (auto [x, y] : data) {
                 DrawCircle(x, screen_height - y, 3.0f, RED);
-                draw_dash_dotted_line(x, screen_height - y, x, screen_height - lr.evaluate_at(x), 4, BLUE);
+                draw_dash_dotted_line(x, screen_height - y, x, screen_height - lr.descent.evaluate_at(x), 4, BLUE);
             }
 
         EndDrawing();
