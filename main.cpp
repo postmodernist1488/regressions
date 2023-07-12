@@ -14,10 +14,35 @@ struct Regression {
     virtual void draw_final(Color color) = 0;   // draw final regression
     virtual void add_point(Vector2 point) = 0;  // update the calculated (final) regression
     virtual void descent_step(std::vector<Vector2> &data) = 0; // do one gradient descent iteration
+    virtual float evaluate_at(float x) = 0;
 
 };
 
-// TODO: line class
+void draw_dash_dotted_line(float start_x, float start_y, float end_x, float end_y, float dash_len, Color color) {
+    const float len_x = end_x - start_x;
+    const float len_y = end_y - start_y;
+    const float step = dash_len / std::sqrt(std::pow(len_x, 2) + std::pow(len_y, 2));
+    const float step_x = step * len_x;
+    const float step_y = step * len_y;
+    float cur_x = start_x,
+          cur_y = start_y;
+
+    // compare independently of direction
+    while (len_x * (cur_x - end_x) < 0 || len_y * (cur_y - end_y) < 0) {
+        float next_x = cur_x + step_x;
+        if (len_x * (next_x - end_x) > 0) {
+            next_x = end_x;
+        }
+        float next_y = cur_y + step_y;
+        if (len_y * (next_y - end_y) > 0) {
+            next_y = end_y;
+        }
+        DrawLine(cur_x, cur_y, next_x, next_y, color);
+        cur_x += 2 * step_x;
+        cur_y += 2 * step_y;
+    }
+}
+
 struct LinearRegression : Regression {
     
     void draw_current(Color color) override {
@@ -40,7 +65,7 @@ struct LinearRegression : Regression {
 
     }
 
-    void descent_step(std::vector<Vector2> &data) {
+    void descent_step(std::vector<Vector2> &data) override {
         const float a_weight = 0.000001f;
         const float b_weight = 0.1f;
         
@@ -59,6 +84,10 @@ struct LinearRegression : Regression {
         }
         descent_a -= a_gradient * a_weight;
         descent_b -= b_gradient * b_weight;
+    }
+
+    float evaluate_at(float x) override {
+        return descent_a * x + descent_b;
     }
 
     //draws y = ax + b through the entire screen
@@ -98,13 +127,14 @@ int main() {
         BeginDrawing();
             ClearBackground(RAYWHITE);
 
-            for (auto [x, y] : data) {
-                DrawCircle(x, screen_height - y, 3.0f, RED);
-            }
-
             lr.draw_final(GRAY);
             lr.descent_step(data);
             lr.draw_current(BLACK);
+
+            for (auto [x, y] : data) {
+                DrawCircle(x, screen_height - y, 3.0f, RED);
+                draw_dash_dotted_line(x, screen_height - y, x, screen_height - lr.evaluate_at(x), 4, BLUE);
+            }
 
         EndDrawing();
     }
