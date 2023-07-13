@@ -43,6 +43,11 @@ def quadratic():
     sol[c] = simplified[c]
     return sol
 
+def power():
+    a, b, x, y = symbols('a,b,x,y')
+    error = (a*Pow(x, b) - y)**2
+    return diff(error, a), diff(error, b)
+
 
 if __name__ == '__main__':
     print('Linear regression:')
@@ -56,4 +61,9 @@ if __name__ == '__main__':
     for key, value in quadratic_sol.items():
         print(f'{key} = {value}')
     print()
+
+    print('Power regression:')
+    diff_a, diff_b = power()
+    print('d ax^b/da =', diff_a)
+    print('d ax^b/db =', diff_b)
 
