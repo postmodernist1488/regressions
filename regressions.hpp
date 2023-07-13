@@ -156,11 +156,12 @@ struct PowerRegression : Regression {
         calculated.b = (n * slnxlny - slnx * slny) / (n * sln2x - std::pow(slnx, 2));
         calculated.a = std::exp((slny - calculated.b * slnx) / n);
     }
+
     void descent_step(std::vector<Vector2> &data) {
     }
 
     void reset() {
-        n = slnx = sln2x = slnxlny = 0.0f;
+        n = slnx = sln2x = slny = slnxlny = 0.0f;
         descent = PowerFunction();
         calculated = PowerFunction();
     }
