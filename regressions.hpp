@@ -158,6 +158,26 @@ struct PowerRegression : Regression {
     }
 
     void descent_step(std::vector<Vector2> &data) {
+        const float a_weight = 0.000001f;
+        const float b_weight = 0.00000001f;
+        
+        float a_gradient = 0.0f;
+        for (auto [x, y]: data) {
+            a_gradient += 2 * (descent.a * std::pow(x, descent.b) - y) * std::pow(x, descent.b);
+        }
+        float b_gradient = 0.0f;
+        for (auto [x, y]: data) {
+            b_gradient += 2 * (descent.a * std::pow(x, descent.b) - y) * descent.a * std::pow(x, descent.b) * std::log(x);
+        }
+
+        if (data.size() > 0) {
+            a_gradient /= data.size();
+            b_gradient /= data.size();
+        }
+        descent.a -= a_gradient * a_weight;
+        descent.b -= b_gradient * b_weight;
+        std::cout << a_gradient << ' ' << b_gradient << std::endl;
+        std::cout << descent.a << ' ' << descent.b << std::endl;
     }
 
     void reset() {
