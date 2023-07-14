@@ -55,8 +55,7 @@ struct LinearRegression : Regression {
 
     void reset() override {
         n = sx = sy = sxy = sx2 = 0;
-        descent = LinearFunction();
-        calculated = LinearFunction();
+        descent = calculated = LinearFunction();
     }
 
     LinearFunction descent, calculated;
@@ -125,8 +124,7 @@ struct QuadraticRegression : Regression {
 
     void reset() override { 
         n = sx4 = sx3 = sx2 = sx = sx2y = sxy = sy;
-        descent = QuadraticFunction();
-        calculated = QuadraticFunction();
+        descent = calculated = QuadraticFunction();
     }
 
     QuadraticFunction descent, calculated;
@@ -145,7 +143,7 @@ struct QuadraticRegression : Regression {
 struct PowerRegression : Regression {
     void draw_description(int x, int y, int font_size, Color color) {
         DrawText("Power regression", x, y, font_size, color);
-        DrawText(TextFormat("y = %.4f * %.4f^x", calculated.a, calculated.b), x, font_size + y, font_size, color);
+        DrawText(TextFormat("y = %.4f * x^%.4f", descent.a, descent.b), x, font_size + y, font_size, color);
     }
     void add_point(Vector2 point) {
         slnx += std::log(point.x);
@@ -176,14 +174,11 @@ struct PowerRegression : Regression {
         }
         descent.a -= a_gradient * a_weight;
         descent.b -= b_gradient * b_weight;
-        std::cout << a_gradient << ' ' << b_gradient << std::endl;
-        std::cout << descent.a << ' ' << descent.b << std::endl;
     }
 
     void reset() {
         n = slnx = sln2x = slny = slnxlny = 0.0f;
-        descent = PowerFunction();
-        calculated = PowerFunction();
+        descent = calculated = PowerFunction();
     }
 
     PowerFunction descent, calculated;
@@ -193,16 +188,59 @@ struct PowerRegression : Regression {
               sln2x = 0.0f,
               slny = 0.0f,
               slnxlny = 0.0f;
-        std::size_t n = 0.0f;
+        std::size_t n = 0;
 };
 
 struct ExponentialRegression : Regression {
     void draw_description(int x, int y, int font_size, Color color) {
+        DrawText("Exponential regression", x, y, font_size, color);
+        DrawText(TextFormat("y = %.4f * %.4f^x", descent.a, descent.b), x, font_size + y, font_size, color);
     }
     void add_point(Vector2 point) {
+        sx += point.x;
+        sx2 += std::pow(point.x, 2);
+        slny += std::log(point.y);
+        sxlny += point.x * std::log(point.y);
+        n += 1;
+        float lnb = (n*sxlny - slny*sx)/(n*sx2 - std::pow(sx,2));
+        calculated.b = exp((n*sxlny - slny*sx)/(n*sx2 - std::pow(sx,2)));
+        calculated.a = exp((-lnb*sx + slny)/n);
+        std::cout << calculated.a << ' ' << calculated.b << std::endl;
     }
     void descent_step(std::vector<Vector2> &data) {
+        //d(ab^x)/da = 2*b**x*(a*b**x - y)
+        //d(ab^x)/db = 2*a*b**x*x*(a*b**x - y)/b
+        const float a_weight = 0.0000000001f;
+        const float b_weight = 0.0000000001f;
+        
+        float a_gradient = 0.0f;
+        for (auto [x, y]: data) {
+            a_gradient += 2 * (descent.a * std::pow(descent.b, x) - y) * std::pow(descent.b, x);
+        }
+        float b_gradient = 0.0f;
+        for (auto [x, y]: data) {
+            b_gradient += 2 * (descent.a * std::pow(descent.b, x) - y) * descent.a * std::pow(descent.b, x) * x;
+        }
+        if (descent.b != 0.0f) b_gradient /= descent.b;
+
+        if (data.size() > 0) {
+            a_gradient /= data.size();
+            b_gradient /= data.size();
+        }
+        descent.a -= a_gradient * a_weight;
+        descent.b -= b_gradient * b_weight;
+        std::cout << a_gradient << ' ' << b_gradient << std::endl;
     }
     void reset() {
+        n = sx = sx2 = slny = sxlny = 0.0f;
+        descent = calculated = ExponentialFunction();
     }
+
+    ExponentialFunction descent, calculated;
+
+    float sx = 0.0f,
+          sx2 = 0.0f,
+          slny = 0.0f,
+          sxlny = 0.0f;
+    std::size_t n = 0;
 };

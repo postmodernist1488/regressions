@@ -46,19 +46,22 @@ void draw_dash_dotted_line(float start_x, float start_y, float end_x, float end_
     } \
 }
 
-enum REGRESSION_TYPE { LINEAR, QUADRATIC, POWER };
+enum REGRESSION_TYPE { LINEAR, QUADRATIC, POWER, EXPONENTIAL };
 
 int main() {
     InitWindow(screen_width, screen_height, "Regressions");
     SetTargetFPS(60);
 
     std::vector<Vector2> data;
-    REGRESSION_TYPE current_regression = POWER;
+    REGRESSION_TYPE current_regression = EXPONENTIAL;
     LinearRegression lr;
     QuadraticRegression qr;
     PowerRegression pr;
+    ExponentialRegression er;
+    er.descent.b = 1.1f;
+    er.descent.a = 1.0f;
 
-    Regression* regressions[] { &lr, &qr, &pr };
+    Regression* regressions[] { &lr, &qr, &pr, &er };
 
     while (!WindowShouldClose()) {
 
@@ -90,6 +93,7 @@ int main() {
         if (IsKeyPressed(KEY_ONE)) current_regression = LINEAR;
         if (IsKeyPressed(KEY_TWO)) current_regression = QUADRATIC;
         if (IsKeyPressed(KEY_THREE)) current_regression = POWER;
+        if (IsKeyPressed(KEY_FOUR)) current_regression = EXPONENTIAL;
 
         BeginDrawing();
             ClearBackground(RAYWHITE);
@@ -110,6 +114,12 @@ int main() {
                     {
                         display(pr);
                     }
+                    break;
+                case EXPONENTIAL:
+                    {
+                        display(er);
+                    }
+                    break;
             }
 
         EndDrawing();
