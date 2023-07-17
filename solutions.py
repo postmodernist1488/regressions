@@ -13,8 +13,8 @@ def linear(show_diff=True):
     if show_diff:
         error = (a * x + b - y)**2
         diff_a, diff_b = diff(error, a), diff(error, b)
-        print('d(ax + b)/da =', diff_a)
-        print('d(ax + b)/db =', diff_b)
+        print('dE/da =', diff_a)
+        print('dE/db =', diff_b)
 
     equations = [
         a*sx2 + b*sx - sxy,
@@ -42,9 +42,9 @@ def quadratic(show_diff=True):
     if show_diff:
         error = (a * x**2 + b * x + c - y)**2
         diff_a, diff_b, diff_c = diff(error, a), diff(error, b), diff(error, c)
-        print('d(ax^2 + bx + c)/da =', diff_a)
-        print('d(ax^2 + bx + c)/db =', diff_b)
-        print('d(ax^2 + bx + c)/dc =', diff_b)
+        print('dE/da =', diff_a)
+        print('dE/db =', diff_b)
+        print('dE/dc =', diff_b)
 
     equations = [
         a*sx4 + b*sx3 + c*sx2 - sx2y,
@@ -75,8 +75,8 @@ def power(show_diff=True):
     if show_diff:
         error = (a*Pow(x, b) - y)**2
         diff_a, diff_b = diff(error, a), diff(error, b)
-        print('d(ax^b)/da =', diff_a)
-        print('d(ax^b)/db =', diff_b)
+        print('dE/da =', diff_a)
+        print('dE/db =', diff_b)
 
     equations = [
         b*sln2x + lna*slnx - slnxlny,
@@ -100,10 +100,11 @@ def exponential(show_diff=True):
     lnb = Symbol('lnb')
 
     if show_diff:
-        error = (a*Pow(b, x) - y)**2
-        diff_a, diff_b = diff(error, a), diff(error, b)
-        print('d(ab^x)/da =', diff_a)
-        print('d(ab^x)/db =', diff_b)
+        lny = Symbol('lny')
+        error = (lna + x*lnb - lny)**2
+        diff_a, diff_b = diff(error, lna), diff(error, lnb)
+        print('dE/dlna =', diff_a)
+        print('dE/dlnb =', diff_b)
 
     equations = [
         lnb*sx2 + lna*sx - sxlny,
