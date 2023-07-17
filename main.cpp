@@ -4,6 +4,7 @@
 #include <iostream>
 #include "functions.hpp"
 #include "regressions.hpp"
+#include <algorithm>
 
 const int screen_width = 1000;
 const int screen_height = 800;
@@ -42,7 +43,8 @@ void draw_dash_dotted_line(float start_x, float start_y, float end_x, float end_
     DrawText(TextFormat("Error: %.02f", error), 30, 90, 30, GRAY);\
     for (auto [x, y] : data) {\
         DrawCircle(x, screen_height - y, 3.0f, RED);\
-        draw_dash_dotted_line(x, screen_height - y, x, screen_height - r.descent.evaluate_at(x), 4, BLUE);\
+        draw_dash_dotted_line(x, std::clamp(screen_height - y, 0.0f, (float) screen_height), x, \
+                std::clamp(screen_height - r.descent.evaluate_at(x), 0.0f, (float) screen_height), 4, BLUE);\
     } \
 }
 
@@ -50,7 +52,7 @@ enum REGRESSION_TYPE { LINEAR, QUADRATIC, POWER, EXPONENTIAL };
 
 int main() {
     InitWindow(screen_width, screen_height, "Regressions");
-    SetTargetFPS(60);
+    SetTargetFPS(30);
 
     std::vector<Vector2> data;
     REGRESSION_TYPE current_regression = EXPONENTIAL;
@@ -58,8 +60,6 @@ int main() {
     QuadraticRegression qr;
     PowerRegression pr;
     ExponentialRegression er;
-    er.descent.b = 1.1f;
-    er.descent.a = 1.0f;
 
     Regression* regressions[] { &lr, &qr, &pr, &er };
 
@@ -97,7 +97,6 @@ int main() {
 
         BeginDrawing();
             ClearBackground(RAYWHITE);
-
 
             switch(current_regression) {
                 case LINEAR: 

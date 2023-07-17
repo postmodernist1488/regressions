@@ -1,3 +1,4 @@
+#pragma once
 #include "functions.hpp"
 #include <cmath>
 #include <cstddef>
@@ -192,6 +193,12 @@ struct PowerRegression : Regression {
 };
 
 struct ExponentialRegression : Regression {
+
+    ExponentialRegression() {
+         descent.a = 1.0f;
+         descent.b = 1.1f;
+    }
+
     void draw_description(int x, int y, int font_size, Color color) {
         DrawText("Exponential regression", x, y, font_size, color);
         DrawText(TextFormat("y = %.4f * %.4f^x", descent.a, descent.b), x, font_size + y, font_size, color);
@@ -205,35 +212,32 @@ struct ExponentialRegression : Regression {
         float lnb = (n*sxlny - slny*sx)/(n*sx2 - std::pow(sx,2));
         calculated.b = exp((n*sxlny - slny*sx)/(n*sx2 - std::pow(sx,2)));
         calculated.a = exp((-lnb*sx + slny)/n);
-        std::cout << calculated.a << ' ' << calculated.b << std::endl;
     }
     void descent_step(std::vector<Vector2> &data) {
-        //d(ab^x)/da = 2*b**x*(a*b**x - y)
-        //d(ab^x)/db = 2*a*b**x*x*(a*b**x - y)/b
-        const float a_weight = 0.0000000001f;
-        const float b_weight = 0.0000000001f;
+        const float lna_weight = 0.0001f;
+        const float lnb_weight = 0.000001f;
         
-        float a_gradient = 0.0f;
+        float lna_gradient = 0.0f;
         for (auto [x, y]: data) {
-            a_gradient += 2 * (descent.a * std::pow(descent.b, x) - y) * std::pow(descent.b, x);
+            lna_gradient += 2 * std::log(descent.a) + 2 * std::log(descent.b) * x - 2 * std::log(y);
         }
-        float b_gradient = 0.0f;
+        float lnb_gradient = 0.0f;
         for (auto [x, y]: data) {
-            b_gradient += 2 * (descent.a * std::pow(descent.b, x) - y) * descent.a * std::pow(descent.b, x) * x;
+            lnb_gradient += 2*x*(std::log(descent.a) + std::log(descent.b)*x - std::log(y));
         }
-        if (descent.b != 0.0f) b_gradient /= descent.b;
 
         if (data.size() > 0) {
-            a_gradient /= data.size();
-            b_gradient /= data.size();
+            lna_gradient /= data.size();
+            lnb_gradient /= data.size();
         }
-        descent.a -= a_gradient * a_weight;
-        descent.b -= b_gradient * b_weight;
-        std::cout << a_gradient << ' ' << b_gradient << std::endl;
+        descent.a /= exp(lna_gradient * lna_weight);
+        descent.b /= exp(lnb_gradient * lnb_weight);
     }
     void reset() {
         n = sx = sx2 = slny = sxlny = 0.0f;
         descent = calculated = ExponentialFunction();
+        descent.b = 1.1f;
+        descent.a = 1.0f;
     }
 
     ExponentialFunction descent, calculated;
