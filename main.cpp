@@ -5,9 +5,17 @@
 #include "functions.hpp"
 #include "regressions.hpp"
 #include <algorithm>
+#define RAYGUI_IMPLEMENTATION
+#include "raygui.h"
 
-const int screen_width = 1000;
+#define xstr(s) #s
+#define str(s) xstr(s)
+#define MAX_ITERATIONS_PER_FRAME 1000
+
+const int screen_width = 800;
 const int screen_height = 800;
+const int interface_width = 250;
+const int interface_height = screen_height;
 
 void draw_dash_dotted_line(float start_x, float start_y, float end_x, float end_y, float dash_len, Color color) {
     const float len_x = end_x - start_x;
@@ -36,7 +44,7 @@ void draw_dash_dotted_line(float start_x, float start_y, float end_x, float end_
 
 #define display(r) {\
     r.calculated.plot(GRAY); \
-    r.descent_step(data);\
+    for (int i = 0; i < (int) iterations_per_frame; ++i) r.descent_step(data);\
     r.descent.plot(BLACK);\
     r.draw_description(30, 30, 30, GRAY);\
     float error = r.descent.current_error(data);\
@@ -51,11 +59,13 @@ void draw_dash_dotted_line(float start_x, float start_y, float end_x, float end_
 enum REGRESSION_TYPE { LINEAR, QUADRATIC, POWER, EXPONENTIAL };
 
 int main() {
-    InitWindow(screen_width, screen_height, "Regressions");
-    SetTargetFPS(30);
+    InitWindow(screen_width + interface_width, screen_height, "Regressions");
+    GuiSetStyle(DEFAULT, BASE_COLOR_NORMAL, 0xf5f5f5ff); 
+    SetTargetFPS(60);
 
     std::vector<Vector2> data;
     REGRESSION_TYPE current_regression = EXPONENTIAL;
+    float iterations_per_frame = 1;
     LinearRegression lr;
     QuadraticRegression qr;
     PowerRegression pr;
@@ -65,7 +75,7 @@ int main() {
 
     while (!WindowShouldClose()) {
 
-        if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) {
+        if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT) && GetMouseX() < screen_width) {
             Vector2 point = {
                 .x = (float) GetMouseX(),
                 .y = (float) (screen_height - GetMouseY())
@@ -74,20 +84,6 @@ int main() {
             for (auto regression: regressions) {
                 regression->add_point(point);
             }
-        }
-
-        if (IsKeyPressed(KEY_R)) {
-            data.clear();
-            for (auto regression: regressions) {
-                regression->reset();
-            }
-        }
-
-        if (IsKeyPressed(KEY_F)) {
-            SetTargetFPS(0);
-        }
-        if (IsKeyReleased(KEY_F)) {
-            SetTargetFPS(60);
         }
 
         if (IsKeyPressed(KEY_ONE)) current_regression = LINEAR;
@@ -119,6 +115,20 @@ int main() {
                         display(er);
                     }
                     break;
+
+            }
+
+            // GUI
+            DrawRectangle(screen_width, 0, interface_width, interface_height, LIGHTGRAY);
+            const Rectangle speed_slider {screen_width + interface_width / 10, 60, interface_width * 8 / 10, 40};
+            DrawText("Speed", screen_width + interface_width / 10, 40, 20, GRAY);
+            GuiSliderBar(speed_slider, "1", str(MAX_ITERATIONS_PER_FRAME), &iterations_per_frame, 1.0f, MAX_ITERATIONS_PER_FRAME);
+            const Rectangle restart_button {screen_width + interface_width / 5, interface_height - 100, interface_width * 3 / 5, 80};
+            if (GuiButton(restart_button, "Restart")) {
+                data.clear();
+                for (auto regression: regressions) {
+                    regression->reset();
+                }
             }
 
         EndDrawing();
