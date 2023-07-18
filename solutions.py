@@ -71,11 +71,13 @@ def power(show_diff=True):
     n   = Symbol('n')
     
     lna = Symbol('lna')
+    lnx = Symbol('lnx')
+    lny = Symbol('lny')
 
     if show_diff:
-        error = (a*Pow(x, b) - y)**2
-        diff_a, diff_b = diff(error, a), diff(error, b)
-        print('dE/da =', diff_a)
+        error = (lna + b*lnx - lny)**2
+        diff_lna, diff_b = diff(error, lna), diff(error, b)
+        print('dE/dlna =', diff_lna)
         print('dE/db =', diff_b)
 
     equations = [
@@ -102,9 +104,9 @@ def exponential(show_diff=True):
     if show_diff:
         lny = Symbol('lny')
         error = (lna + x*lnb - lny)**2
-        diff_a, diff_b = diff(error, lna), diff(error, lnb)
-        print('dE/dlna =', diff_a)
-        print('dE/dlnb =', diff_b)
+        diff_lna, diff_lnb = diff(error, lna), diff(error, lnb)
+        print('dE/dlna =', diff_lna)
+        print('dE/dlnb =', diff_lnb)
 
     equations = [
         lnb*sx2 + lna*sx - sxlny,

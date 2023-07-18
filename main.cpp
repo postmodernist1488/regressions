@@ -66,7 +66,7 @@ int main() {
     SetTargetFPS(60);
 
     std::vector<Vector2> data;
-    REGRESSION_TYPE current_regression = EXPONENTIAL;
+    REGRESSION_TYPE current_regression = LINEAR;
     float iterations_per_frame = 1;
     LinearRegression lr;
     QuadraticRegression qr;

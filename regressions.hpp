@@ -142,6 +142,12 @@ struct QuadraticRegression : Regression {
 };
 
 struct PowerRegression : Regression {
+
+    PowerRegression() {
+        descent.a = 1.0f;
+        descent.b = 1.1f;
+    }
+
     void draw_description(int x, int y, int font_size, Color color) {
         DrawText("Power regression", x, y, font_size, color);
         DrawText(TextFormat("y = %.4f * x^%.4f", descent.a, descent.b), x, font_size + y, font_size, color);
@@ -157,29 +163,31 @@ struct PowerRegression : Regression {
     }
 
     void descent_step(std::vector<Vector2> &data) {
-        const float a_weight = 0.000001f;
-        const float b_weight = 0.00000001f;
+        const float lna_weight = 0.0001f;
+        const float b_weight = 0.0001f;
         
-        float a_gradient = 0.0f;
+        float lna_gradient = 0.0f;
         for (auto [x, y]: data) {
-            a_gradient += 2 * (descent.a * std::pow(x, descent.b) - y) * std::pow(x, descent.b);
+            lna_gradient += 2 * (descent.b * std::log(x) + std::log(descent.a) - std::log(y));
         }
         float b_gradient = 0.0f;
         for (auto [x, y]: data) {
-            b_gradient += 2 * (descent.a * std::pow(x, descent.b) - y) * descent.a * std::pow(x, descent.b) * std::log(x);
+            b_gradient += 2 * std::log(x) * (descent.b * std::log(x) + std::log(descent.a) - std::log(y));
         }
 
         if (data.size() > 0) {
-            a_gradient /= data.size();
+            lna_gradient /= data.size();
             b_gradient /= data.size();
         }
-        descent.a -= a_gradient * a_weight;
+        descent.a /= exp(lna_gradient * lna_weight);
         descent.b -= b_gradient * b_weight;
     }
 
     void reset() {
         n = slnx = sln2x = slny = slnxlny = 0.0f;
         descent = calculated = PowerFunction();
+        descent.a = 1.0f;
+        descent.b = 1.1f;
     }
 
     PowerFunction descent, calculated;
