@@ -1,11 +1,13 @@
-#include <raylib.h>
 #include <vector>
 #include <cmath>
 #include <iostream>
+#include <algorithm>
+#include <raylib.h>
 #include "functions.hpp"
 #include "regressions.hpp"
-#include <algorithm>
 #define RAYGUI_IMPLEMENTATION
+#define RAYGUI_CUSTOM_ICONS
+#include "ricons.h"
 #include "raygui.h"
 
 #define xstr(s) #s
@@ -130,6 +132,14 @@ int main() {
                     regression->reset();
                 }
             }
+            const Rectangle lp_button {screen_width + interface_width / 4, interface_height * 1 / 4, interface_width / 4, interface_width / 4};
+            if (GuiButton(lp_button, "#219#")) current_regression = LINEAR;
+            const Rectangle qp_button {screen_width + interface_width * 2 / 4, interface_height * 1 / 4, interface_width / 4, interface_width / 4};
+            if (GuiButton(qp_button, "#220#")) current_regression = QUADRATIC;
+            const Rectangle pp_button {screen_width + interface_width / 4, interface_height * 1 / 4 + interface_width / 4, interface_width / 4, interface_width / 4};
+            if (GuiButton(pp_button, "#221#")) current_regression = POWER;
+            const Rectangle ep_button {screen_width + interface_width * 2 / 4, interface_height * 1 / 4 + interface_width / 4, interface_width / 4, interface_width / 4};
+            if (GuiButton(ep_button, "#222#")) current_regression = EXPONENTIAL;
 
         EndDrawing();
     }
